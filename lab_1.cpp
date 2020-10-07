@@ -22,11 +22,13 @@ int main()
 	setlocale(LC_ALL, "Russian");
 
 	Point operating_point;
-	operating_point.x = 0;
-	cout << "Введите координату v исходной точки";
+
+	// Ввод начальных условий
+	cout << "Введите начальную координату Xo исходной точки";
+	cin >> operating_point.x;
+	cout << "Введите начальную координату Uo исходной точки";
 	cin >> operating_point.v;
-	
-	//starting_point=initialization_baze_point(starting_point.x)
+
 
 
 	// Ввести числовое значение шага
@@ -35,14 +37,14 @@ int main()
 	cin >> h;
 
 
-	// Сколько сделать шагов
+	// Количество итераций
 	int number_of_steps;
 	cout << "Сколько сделать шагов?";
 	cin >> number_of_steps;
-	
+
 	for (int i = 0; i < number_of_steps; i++)
 	{
-		cout << "Шаг №"<<i << "		" << "X"<<i<<" = "<<operating_point.x << "		" <<"V" << i << " = " << operating_point.v << endl;
+		cout << "Шаг №" << i << "		" << "X" << i << " = " << operating_point.x << "		" << "V" << i << " = " << operating_point.v << endl;
 		Method_RK_4(operating_point, h);
 
 	}
@@ -51,21 +53,11 @@ int main()
 }
 
 
-// Инициализация стартовой точки по базовым условиям
-/*Point initialization_baze_point(double x)
-{
-	Point baze_point;
-	baze_point.x = x;
-
-	//Vo=Uo, при этом U(o)=0(Только для данной функции) => Vo=0;
-	baze_point.v = function(x, 0);
-
-	return baze_point;
-}*/
-
-//Функция для рассчетов тестовой задачи
-//du/dx=(-1)^N_варианта*(N_варианта/2)*U
-// 2U
+/*
+	--- Функция для рассчетов тестовой задачи
+	--- Вариант 4
+	--- 2U
+ */
 double function(double x, double v)
 {
 	return 2 * v;
@@ -74,7 +66,7 @@ double function(double x, double v)
 //Метод Рунге-Кутта 4го порядка
 void Method_RK_4(Point& starting_point, double h)
 {
-	
+
 	// Объявление результирующий точки данного шага
 	//Point resulting_point;
 
@@ -82,16 +74,14 @@ void Method_RK_4(Point& starting_point, double h)
 	double koef1, koef2, koef3, koef4;
 
 	koef1 = function(starting_point.x, starting_point.v);
-	koef2 = function(starting_point.x + h/2, starting_point.v + (h / 2)*koef1);
-	koef3 = function(starting_point.x + h/2, starting_point.v + (h / 2)*koef2);
-	koef4 = function(starting_point.x + h, starting_point.v + h *koef3);
+	koef2 = function(starting_point.x + h / 2, starting_point.v + (h / 2) * koef1);
+	koef3 = function(starting_point.x + h / 2, starting_point.v + (h / 2) * koef2);
+	koef4 = function(starting_point.x + h, starting_point.v + h * koef3);
 
 	// Вычисление следующей точки
 	starting_point.x += h;
-	starting_point.v += h*(koef1+2*koef2+2*koef3+koef4)/6;
+	starting_point.v += h * (koef1 + 2 * koef2 + 2 * koef3 + koef4) / 6;
 
 
-	//Присвоение значения результирующей точки
-	
-	//return resulting_point;
+
 }
