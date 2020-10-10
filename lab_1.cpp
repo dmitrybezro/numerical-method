@@ -16,17 +16,34 @@ struct Point
 //Прототипы функций
 double function(double x, double v);
 Point Method_RK_4(Point& starting_point, double h);
-void Test_Task(void);
-void Test_Task_control(void);
+void Task(void);
+void Task_control(void);
 Point initialization_point(void);
 
+// Костыль для выбора задачи
+int select_task;
 
 int main()
 {
 	setlocale(LC_ALL, "Russian");
 
-	//Test_Task();
-	Test_Task_control();
+	//Выбор задачи задачи( Пока только тест и первая)
+	cout << "Выбор задачи" << endl;
+	cout << "1 - основная первая" << endl;
+	cout << "2 - тестовая" << endl;
+	cin >> select_task;
+
+	//Выбор метода решения (с контролем ЛП или без)
+	int control;
+	cout << "Решить задачу" << endl;
+	cout << "0 - без контроля локальной погрешности" << endl;
+	cout << "1 - с контролем локальной погрешности" << endl;
+	cin >> control;
+
+	if (control)
+		Task_control();
+	else
+		Task();
 
 	return 0;
 }
@@ -39,7 +56,10 @@ int main()
  */
 double function(double x, double v)
 {
-	return 2 * v;
+	if (select_task == 2)
+		return 2 * v;
+	if (select_task == 1)
+		return ((pow(x, 3)) / (pow(x, 5))) * pow(v, 2) + v - pow(v, 3) * sin(10 * x);
 }
 
 //Метод Рунге-Кутта 4го порядка
@@ -68,7 +88,7 @@ Point Method_RK_4(Point& starting_point, double h)
 
 }
 
-void Test_Task(void)
+void Task(void)
 {
 
 	// Инициализация стартовой точки и ввод значений
@@ -82,19 +102,26 @@ void Test_Task(void)
 
 
 	// Количество итераций
-	int number_of_steps;
-	cout << "Сколько сделать шагов?" << endl;
-	cin >> number_of_steps;
+	int max_steps;
+	cout << "Введите максимально возможное число итераций?" << endl;
+	cin >> max_steps;
 
-	for (int i = 0; i < number_of_steps; i++)// While(X)||(iter)
+	// Граница Х и V
+	double Xmax;
+	cout << "Введите границу Х" << endl;
+	cin >> Xmax;
+
+	for (int i = 0; (i < max_steps) && (operating_point.x < Xmax); i++)
 	{
-		cout << "№" << i << "		" << "X" << i << " = " << operating_point.x << "		" << "V" << i << " = " << operating_point.v << endl;
+		cout << "№" << i << "	";
+		cout << "X" << i << " = " << operating_point.x << "	";
+		cout << "V" << i << " = " << operating_point.v << endl;
 		operating_point = Method_RK_4(operating_point, h);
 
 	}
 }
 
-void Test_Task_control(void)
+void Task_control(void)
 {
 	// Порядок метода
 	const double order = 4;
@@ -115,13 +142,40 @@ void Test_Task_control(void)
 	cin >> Eps;
 
 	// Количество итераций
-	int number_of_steps;
-	cout << "Сколько сделать шагов?";
-	cin >> number_of_steps;
+	int max_steps;
+	cout << "Введите максимально возможное число итераций?" << endl;
+	cin >> max_steps;
 
-	for (int i = 0; i < number_of_steps; i++)
+	// Граница Х и V
+	double Xmax;
+	cout << "Введите границу Х" << endl;
+	cin >> Xmax;
+
+	// Счетчики увеличения и уменьшения шага
+	double reduct_step = 0;
+	double decrease_step = 0;
+
+	// Максимальная оценка локальной погрешности
+	double max_OLP = 0;
+
+	// Минимальный и максимальный шаг при Х
+	// Задается точкой, где x - это х, а v - это шаг
+	Point max_h;
+	max_h.v = 0;
+	int i_max;
+	Point min_h;
+	min_h.v = h;
+	int i_min;
+
+	// Для тестовой задачи
+	// v - max|Ui - Vi| , а x - это x
+	int i_max_test = 0;
+	Point max_uv;
+	max_uv.v = 0;
+
+	int i;
+	for (i = 0; (i < max_steps) && (current_point.x < Xmax); i++)
 	{
-		cout << "№" << i << "  " << "Шаг = " << h << "  " << "X" << i << " = " << current_point.x << "  " << "V" << i << " = " << current_point.v << endl;
 
 		// (Xn+1,Vn+1)
 		Point next_point = Method_RK_4(current_point, h);
@@ -135,23 +189,80 @@ void Test_Task_control(void)
 		// Число для сравнения с числом контроля локальной погрешности
 		double S = (next_point_cap.v - next_point.v) / (pow(2, order) - 1);
 
-		if ((abs(S) >= Eps / (pow(2, order + 1))) && (abs(S) <= Eps))
+		// Оценка локальной погрешности
+		double OLP = S * pow(2, order);
+
+		if (fabs(OLP) > max_OLP)
+			max_OLP = OLP;
+
+		// Определения максимума и минимума шага
+		if (max_h.v <= h)
+		{
+			max_h.v = h;
+			max_h.x = current_point.x;
+			i_max = i;
+		}
+		if (min_h.v >= h)
+		{
+			min_h.v = h;
+			min_h.x = current_point.x;
+			i_min = i;
+		}
+
+		// Вывод данных
+		if (i % 10 == 0)
+			cout << endl;
+		cout << i << "  " << "X" << i << "=" << current_point.x << "  " << "V" << i << "=" << current_point.v;
+		cout << i << "  " << "(V2)" << i << "=" << next_point_cap.v << "  " << "V" << i << " -(V2)" << i << "=" << current_point.v - next_point_cap.v << "  ";
+		cout << "OLP=" << OLP << "  " << "h" << i << "=" << h << "  ";
+		cout << "C1=" << reduct_step << "  " << "C2=" << decrease_step << "  ";
+		if (select_task == 2)
+		{
+			cout << "U" << i << function(current_point.x, current_point.v) << "  ";
+			cout << "|U" << i << "-V" << i << "|=" << fabs(function(current_point.x, current_point.v) - current_point.v) << endl;
+
+			if (fabs(function(current_point.x, current_point.v) - current_point.v) > max_uv.v)
+			{
+				max_uv.v = fabs(function(current_point.x, current_point.v) - current_point.v);
+				max_uv.x = current_point.x;
+				i_max_test = i;
+			}
+		}
+		else
+			cout << endl;
+
+		if ((fabs(S) >= Eps / (pow(2, order + 1))) && (fabs(S) <= Eps))
 		{
 			current_point = next_point;
 		}
 
-		if (abs(S) < Eps / (pow(2, order + 1)))
+		if (fabs(S) < Eps / (pow(2, order + 1)))
 		{
 			current_point = next_point;
 			h = 2 * h;
+			reduct_step++;
 		}
 
-		if (abs(S) > Eps)
+		if (fabs(S) > Eps)
 		{
 			h = h / 2;
+			decrease_step++;
 		}
 
 	}
+
+	// Выходные данные программы
+	cout << "n = " << i + 1 << endl;
+	cout << "Xmax - X" << i << " = " << Xmax - current_point.x << endl;
+	cout << "max |ОЛП| = " << max_OLP << endl;
+	cout << "Общее число удвоения шага :  " << reduct_step << endl;
+	cout << "Общее число деления шага :  " << decrease_step << endl;
+	cout << "Максимальный шаг h" << i_max << " = " << max_h.v << " при Х = " << max_h.x << endl;
+	cout << "Минимальный шаг h" << i_min << " = " << min_h.v << " при Х = " << min_h.x << endl;
+
+	// + Для тестовой задачи
+	if (select_task == 2)
+		cout << "max| U" << i_max_test << " - V" << i_max_test << " | = " << max_uv.v << " при x = " << max_uv.x << endl;
 }
 
 Point initialization_point(void)
