@@ -59,7 +59,7 @@ double function(double x, double v)
 	if (select_task == 2)
 		return 2 * v;
 	if (select_task == 1)
-		return ((pow(x, 3)) / (pow(x, 5))) * pow(v, 2) + v - pow(v, 3) * sin(10 * x);
+		return (pow(x, 3) + 1) / (pow(x, 5) + 1) * pow(v, 2) + v - pow(v, 3) * sin(10 * x);
 }
 
 //Метод Рунге-Кутта 4го порядка
@@ -77,13 +77,10 @@ Point Method_RK_4(Point& starting_point, double h)
 	koef3 = function(starting_point.x + h / 2, starting_point.v + (h / 2) * koef2);
 	koef4 = function(starting_point.x + h, starting_point.v + h * koef3);
 
-	// Вычисление следующей точки
-	starting_point.x += h;
-	starting_point.v += h * (koef1 + 2 * koef2 + 2 * koef3 + koef4) / 6;
 
 	//Присвоение значения и возврат результирующей точки
-	resulting_point.x = starting_point.x;
-	resulting_point.v = starting_point.v;
+	resulting_point.x = starting_point.x + h;
+	resulting_point.v = starting_point.v + h * (koef1 + 2 * koef2 + 2 * koef3 + koef4) / 6;
 	return resulting_point;
 
 }
@@ -128,8 +125,10 @@ void Task_control(void)
 
 	// Инициализация стартовой точки и ввод значений
 	// (Xn,Vn)
-	Point current_point = initialization_point();
+	Point current_point;
 
+	// Ввод начальных условий
+	current_point = initialization_point();
 
 	// Ввести числовое значение шага
 	double h;
@@ -156,7 +155,7 @@ void Task_control(void)
 	double decrease_step = 0;
 
 	// Максимальная оценка локальной погрешности
-	double max_OLP = 0;
+	double Smax = 0;
 
 	// Минимальный и максимальный шаг при Х
 	// Задается точкой, где x - это х, а v - это шаг
@@ -172,7 +171,6 @@ void Task_control(void)
 	int i_max_test = 0;
 	Point max_uv;
 	max_uv.v = 0;
-
 	int i;
 	for (i = 0; (i < max_steps) && (current_point.x < Xmax); i++)
 	{
@@ -189,11 +187,9 @@ void Task_control(void)
 		// Число для сравнения с числом контроля локальной погрешности
 		double S = (next_point_cap.v - next_point.v) / (pow(2, order) - 1);
 
-		// Оценка локальной погрешности
-		double OLP = S * pow(2, order);
-
-		if (fabs(OLP) > max_OLP)
-			max_OLP = OLP;
+		//Определение максимальной оценки локальной погрешности
+		if (fabs(S) > Smax)
+			Smax = S;
 
 		// Определения максимума и минимума шага
 		if (max_h.v <= h)
@@ -210,16 +206,14 @@ void Task_control(void)
 		}
 
 		// Вывод данных
-		if (i % 10 == 0)
-			cout << endl;
-		cout << i << "  " << "X" << i << "=" << current_point.x << "  " << "V" << i << "=" << current_point.v;
-		cout << i << "  " << "(V2)" << i << "=" << next_point_cap.v << "  " << "V" << i << " -(V2)" << i << "=" << current_point.v - next_point_cap.v << "  ";
-		cout << "OLP=" << OLP << "  " << "h" << i << "=" << h << "  ";
+		cout << i + 1 << "  " << "X" << "=" << current_point.x << "  " << "V" << "=" << current_point.v;
+		cout << "  " << "(V2)" << "=" << next_point_cap.v << "  " << "V" << "-V2" << " =" << current_point.v - next_point_cap.v << "  ";
+		cout << "OLP=" << S << "  " << "  h" << "=" << h << "  ";
 		cout << "C1=" << reduct_step << "  " << "C2=" << decrease_step << "  ";
 		if (select_task == 2)
 		{
-			cout << "U" << i << function(current_point.x, current_point.v) << "  ";
-			cout << "|U" << i << "-V" << i << "|=" << fabs(function(current_point.x, current_point.v) - current_point.v) << endl;
+			cout << "U = " << function(current_point.x, current_point.v) << "  ";
+			cout << "|U" << "-V" << "|=" << fabs(function(current_point.x, current_point.v) - current_point.v) << endl;
 
 			if (fabs(function(current_point.x, current_point.v) - current_point.v) > max_uv.v)
 			{
@@ -231,30 +225,37 @@ void Task_control(void)
 		else
 			cout << endl;
 
+
 		if ((fabs(S) >= Eps / (pow(2, order + 1))) && (fabs(S) <= Eps))
 		{
-			current_point = next_point;
+			current_point.x = next_point.x;
+			current_point.v = next_point.v;
 		}
-
-		if (fabs(S) < Eps / (pow(2, order + 1)))
+		else
 		{
-			current_point = next_point;
-			h = 2 * h;
-			reduct_step++;
-		}
-
-		if (fabs(S) > Eps)
-		{
-			h = h / 2;
-			decrease_step++;
+			if (fabs(S) < Eps / (pow(2, order + 1)))
+			{
+				current_point.x = next_point.x;
+				current_point.v = next_point.v;
+				h = 2 * h;
+				reduct_step++;
+			}
+			else
+			{
+				if (fabs(S) > Eps)
+				{
+					h = h / 2;
+					decrease_step++;
+				}
+			}
 		}
 
 	}
 
 	// Выходные данные программы
-	cout << "n = " << i + 1 << endl;
+	cout << "n = " << i << endl;
 	cout << "Xmax - X" << i << " = " << Xmax - current_point.x << endl;
-	cout << "max |ОЛП| = " << max_OLP << endl;
+	cout << "max |ОЛП| = " << Smax << endl;
 	cout << "Общее число удвоения шага :  " << reduct_step << endl;
 	cout << "Общее число деления шага :  " << decrease_step << endl;
 	cout << "Максимальный шаг h" << i_max << " = " << max_h.v << " при Х = " << max_h.x << endl;
